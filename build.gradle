@@ -1,0 +1,63 @@
+plugins {
+    id "java-library"
+
+    id "com.github.ben-manes.versions" version "0.36.0"
+}
+
+apply(from: project.file("gradle/dependencies.gradle"))
+
+allprojects {
+    group = "com.github.tt4g.reactor_lock_guard"
+    version = "0.1.0"
+
+    repositories {
+        mavenCentral()
+    }
+
+    tasks.withType(JavaCompile) {
+        options.release = 11
+        options.encoding = "UTF-8"
+        options.compilerArgs += "-Xlint:all"
+    }
+}
+
+dependencies {
+    implementation(platform("io.projectreactor:reactor-bom:${versions.reactorVersion}"))
+    implementation("io.projectreactor:reactor-core")
+    testImplementation("io.projectreactor:reactor-test")
+
+    testImplementation(platform("org.junit:junit-bom:${versions.junitVersion}"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    testImplementation("org.mockito:mockito-core:${versions.mockitoVersion}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${versions.mockitoVersion}")
+
+    testImplementation("org.assertj:assertj-core:${versions.assertjVersion}")
+}
+
+tasks.named("test") {
+    useJUnitPlatform()
+}
+
+// plugin: com.github.ben-manes.versions
+dependencyUpdates {
+    revision = "release"
+    checkForGradleUpdate = true
+    gradleReleaseChannel = "current"
+    checkConstraints = true
+    outputFormatter = "plain"
+
+    def isNonStable = { String version ->
+        def stableKeyword = ["RELEASE", "FINAL", "GA"].any { stable -> version.toUpperCase().contains(stable) }
+        def versionRegex = /^[0-9,.v-]+(-r)?$/
+
+        return !stableKeyword && !(version ==~ versionRegex)
+    }
+
+    rejectVersionIf {
+        isNonStable(it.candidate.version)
+    }
+}
