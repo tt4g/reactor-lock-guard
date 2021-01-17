@@ -12,16 +12,20 @@ public class LockGuard {
         this.lockGuardIdStore = new LockGuardIdStore();
     }
 
-    public <T> Mono<T> run(LockGuardId id, LockGuardAction<T> action) throws IdConflictException {
+    public <T> Mono<T> run(LockGuardId id, LockGuardActionProvider<T> action) {
         Objects.requireNonNull(id);
         Objects.requireNonNull(action);
 
-        if (!this.lockGuardIdStore.add(id)) {
-            throw new IdConflictException(id, "The LockGuardId is conflict. id=" + id);
-        }
-
-        return action.execute()
-            .doFinally(_ignore -> this.lockGuardIdStore.remove(id));
+        return action.get().transformDeferred(original -> {
+            if (this.lockGuardIdStore.add(id)) {
+                return original
+                    .doFinally(_ignore ->
+                        this.lockGuardIdStore.remove(id));
+            } else {
+                return Mono.error(() ->
+                    new IdConflictException(id, "The LockGuardId is conflict. id=" + id));
+            }
+        });
     }
 
 }

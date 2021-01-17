@@ -3,8 +3,8 @@ package com.github.tt4g.reactor_lock_guard;
 import reactor.core.publisher.Mono;
 
 @FunctionalInterface
-public interface LockGuardAction<T> {
+public interface LockGuardActionProvider<T> {
 
-    Mono<T> execute();
+    Mono<T> get();
 
 }
