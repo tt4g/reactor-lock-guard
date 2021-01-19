@@ -241,4 +241,55 @@ class LockGuardTest {
         assertThat(actual2).isEqualTo("third mono");
     }
 
+    @Test
+    public void tryLockWhenLockSuccess() {
+        LockGuardId lockGuardId = new LockGuardId(96);
+
+        TryLock<String> tryLock =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+        assertThat(tryLock).isExactlyInstanceOf(TryLock.Locked.class);
+    }
+
+    @Test
+    public void tryLockWhenLockConflict() {
+        LockGuardId lockGuardId = new LockGuardId(96);
+
+        TryLock<String> tryLockSuccess =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+        TryLock<String> tryLockConflict =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+
+        assertThat(tryLockConflict).isExactlyInstanceOf(TryLock.NotLocked.class);
+    }
+
+    @Test
+    public void tryLockWhenLockClosedThenConflictIdNotLocked() {
+        LockGuardId lockGuardId = new LockGuardId(96);
+
+        TryLock<String> tryLockSuccess =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+
+        tryLockSuccess.close();
+
+        TryLock<String> tryLockConflict =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+
+        assertThat(tryLockConflict).isExactlyInstanceOf(TryLock.Locked.class);
+    }
+
+    @Test
+    public void tryLockWhenLockMonoSubscribedThenConflictIdNotLocked() {
+        LockGuardId lockGuardId = new LockGuardId(96);
+
+        TryLock<String> tryLockSuccess =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+
+        tryLockSuccess.get().block(Duration.ofMillis(10));
+
+        TryLock<String> tryLockConflict =
+            this.lockGuard.tryLock(lockGuardId, this.lockGuardActionProvider);
+
+        assertThat(tryLockConflict).isExactlyInstanceOf(TryLock.Locked.class);
+    }
+
 }
