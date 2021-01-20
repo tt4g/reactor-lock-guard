@@ -47,7 +47,8 @@ public abstract class TryLock<T> implements AutoCloseable {
                     .doOnSubscribe(_ignore ->
                         this.subscribed.compareAndSet(false, true))
                     .doFinally(_ignore ->
-                        this.runCleanUp());
+                        this.runCleanUp())
+                    .cache(); // Locked resources can only be accessed once.
         }
 
         @Override
